@@ -18,7 +18,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <sys/sem.h>
+
 #include <dirent.h>
 #include <string.h>
 #include <time.h>
@@ -289,10 +289,39 @@ public:
 		return 0;
 	}
 
+
 	/*清空目录下的文件*/
-	bool DestroyDir(const char* pathName)
+	void DestroyDir(const char* pathName)
 	{
+		DIR *path = opendir(pathName);
 		
+		struct dirent *direntp;
+		if (path)
+		{
+			while ((direntp = readdir(path)) != NULL)
+			{
+				char a[128];
+				strcpy(a, pathName);
+				strcat(a, "/");
+				strcat(a, direntp->d_name);
+				if (direntp->d_type == 4)
+				{
+					if ((!strcmp(direntp->d_name, ".")) || (!strcmp(direntp->d_name, "..")))
+					{
+						continue;
+					}
+					
+					DestroyDir(a);
+					rmdir(a);
+				}
+
+				if (direntp->d_type == 8)
+				{
+					unlink(a);
+				}
+			}
+		}
+
 	}
 
 
@@ -318,11 +347,13 @@ public:
 		printf("\n");
 		return t;
 	}
+
 	/*判断集合列表是否为空*/
 	bool IsEmptySet()
 	{
 		return set.empty();
 	}
+
 	char wav[128];//待转换的wav文件(路径+文件名)
 private:
 	char mp3[128];//转换后的mp3文件(路径+文件名)
@@ -407,7 +438,7 @@ int main()
 	File file(ini.Inid["set"]["input"], ini.Inid["set"]["output"]);
 
 	file.get();
-	file.DestroyDir("root/tes");
+	file.DestroyDir("/root/tes");
 	
 	return 0;
 }
